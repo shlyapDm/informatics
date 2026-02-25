@@ -122,3 +122,54 @@ def task8():
     h=V*t - 0.5*(g*t**2)  #нахождение высоты
     Ep= m_kg*g*h
     print(f"Потенциальная энергия в формате .4f: Ep = {Ep:.4f} Дж")
+
+
+
+
+
+"дополнительное"
+
+def positive(prompt, name):
+    while True:
+        try:
+            perem= float(input(prompt))
+            if perem <= 0:
+                print(f"Ошибка: {name} должна быть больше 0")
+                continue
+            return perem
+        except ValueError:
+            print("Введите число")
+
+def negative(prompt, name):
+    while True:
+        try:
+            perem= float(input(prompt))
+            if perem >=0:
+                print(f"Ошибка: {name} должна быть меньше 0")
+                continue
+            return perem
+        except ValueError:
+            print("Введите число")
+
+def check(prompt, name, mode="pos"):
+    if mode =="pos":
+        return positive(prompt, name)
+    elif mode =="neg":
+        return negative(prompt, name)
+
+def task66():
+    """Конькобежец массой M(кг), стоя на коньках на льду, бросает в горизонтальном направлении
+    камень массой m(кг) со скоростью V(м/с) относительно льда, коэф. тренеия = mu
+    Надо найти на какое рассотяние S откатьится при этом конькобежец"""
+
+    M= check("Введите массу конькобежца M (кг): ", "Масса M", "neg")
+    m= check("Введите массу камня m (кг): ", "Масса m", "pos")
+    V= check("Введите скорость броска V (м/с): ", "Скорость V", "pos")
+    mu= check("Введите коэффициент трения mu: ", "Коэффициент трения", "pos")
+
+    g= 9.81
+    V= m*V / M
+    S= V**2 / (2*mu*g)
+
+    print(f"Расстояние отката в формате .4f: S = {S:.4f}(м)")
+
