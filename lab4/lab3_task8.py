@@ -69,24 +69,32 @@ def create_directory():
         print(f"Ошибка при создании директории: {e}")
 
 
+import shutil  
 def delete_directory():
     """Удаление директории"""
-    dirname = input("\nВведите имя директории для удаления(должна быть пустой): ").strip()
+    dirname = input("\nВведите имя директории для удаления: ").strip()
     if not dirname:
         print("Ошибка: Имя директории не может быть пустым")
         return
+
     if not os.path.exists(dirname):
         print(f"Директория '{dirname}' не существует")
         return
-    try:
-        # rmdir удаляет только пустые директории
-        os.rmdir(dirname)
-        print(f"Директория '{dirname}' успешно удалена")
-    except OSError:
-        print(f"Ошибка: Директория '{dirname}' не пуста")
-    except Exception as e:
-        print(f"Ошибка при удалении: {e}")
 
+    if not os.path.isdir(dirname):
+        print(f"'{dirname}' — это файл, а не директория")
+        return
+
+    try:
+        # Пробуем снести её подчистую вместе с содержимым (если оно есть)
+        shutil.rmtree(dirname)
+        print(f"Директория '{dirname}' успешно удалена!")
+    except PermissionError as e:
+        print(f"\n[!] Windows всё ещё блокирует папку.")
+    except Exception as e:
+        print(f"Непредвиденная ошибка при удалении: {e}")
+
+        
 
 def main():
     while True:
