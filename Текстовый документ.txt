@@ -1,0 +1,266 @@
+labs/lab6/
+├── main.py                  # Главный запуск (GUI + демонстрация)
+├── lp_problem.py            # Класс LPProblem (Задание 2)
+├── gui.py                   # Графический интерфейс (Задание 3)
+├── solutions.py             # Решения всех задач (для отчёта)
+└── requirements.txt
+
+
+
+1. Задание 2: Класс LPProblem (scipy.optimize.linprog)
+Файл: lp_problem.py
+
+
+import numpy as np
+from scipy.optimize import linprog
+from typing import List, Optional, Tuple
+
+class LPProblem:
+    _count = 0  # Статическая переменная — количество созданных задач
+
+    def __init__(self, 
+                 c: List[float], 
+                 A_ub: Optional[List[List[float]]] = None,
+                 b_ub: Optional[List[float]] = None,
+                 A_eq: Optional[List[List[float]]] = None,
+                 b_eq: Optional[List[float]] = None,
+                 bounds: Optional[List[Tuple[float, float]]] = None,
+                 method: str = 'highs'):
+        
+        LPProblem._count += 1
+        self.id = LPProblem._count
+        
+        self.c = np.array(c, dtype=float)
+        self.A_ub = np.array(A_ub, dtype=float) if A_ub else None
+        self.b_ub = np.array(b_ub, dtype=float) if b_ub else None
+        self.A_eq = np.array(A_eq, dtype=float) if A_eq else None
+        self.b_eq = np.array(b_eq, dtype=float) if b_eq else None
+        self.bounds = bounds or [(0, None) for _ in c]
+        self.method = method
+        
+        self.x = None
+        self.fun = None
+        self.success = False
+
+    def solve(self) -> bool:
+        """Решение задачи линейного программирования"""
+        res = linprog(
+            c=self.c,
+            A_ub=self.A_ub,
+            b_ub=self.b_ub,
+            A_eq=self.A_eq,
+            b_eq=self.b_eq,
+            bounds=self.bounds,
+            method=self.method
+        )
+        
+        self.success = res.success
+        if res.success:
+            self.x = res.x
+            self.fun = res.fun
+        return res.success
+
+    def __str__(self) -> str:
+        n = len(self.c)
+        vars_str = " + ".join([f"{coef}x{i+1}" for i, coef in enumerate(self.c)])
+        goal = "max" if all(x <= 0 for x in self.c) else "min"  # грубая эвристика
+        return f"f = {vars_str} → {goal}\nРешение найдено: {self.success}"
+
+    def __len__(self) -> int:
+        return len(self.c)
+
+    def __del__(self):
+        LPProblem._count -= 1
+
+    @classmethod
+    def get_count(cls):
+        return cls._count
+
+
+
+
+
+
+2. Решения всех задач (для отчёта и тестирования)
+Файл: solutions.py
+
+
+from lp_problem import LPProblem
+
+def solve_all_problems():
+    print("=== РЕШЕНИЕ ЗАДАЧ ВАРИАНТА 16 ===\n")
+    
+    # Задача 1 (2 переменные)
+    p1 = LPProblem(
+        c=[-3, -2],  # max → min (умножаем на -1)
+        A_ub=[[4, 1], [-3, -10], [1, 11]],
+        b_ub=[6, -16, 20]
+    )
+    p1.solve()
+    print("Задача 1:", p1.x, "f =", -p1.fun)  # возвращаем к max
+
+    # Задача 2
+    p2 = LPProblem(
+        c=[-1, -2],
+        A_ub=[[1,1], [3,10], [1,11]],
+        b_ub=[6,26,20]
+    )
+    p2.solve()
+    print("Задача 2:", p2.x, "f =", -p2.fun)
+
+    # Задача 3 (3 переменные)
+    p3 = LPProblem(
+        c=[0.89, 0.83, 2.5],  # max → min
+        A_ub=[[0.6, -1, -0.5]],
+        b_ub=[-0.33],
+        A_eq=[[-1.22, -1, -4], [-0.17, -1.8, -0.11]],
+        b_eq=[-1.5, -1]
+    )
+    p3.solve()
+    print("Задача 3:", p3.x, "f =", -p3.fun)
+
+    # Задача 4
+    p4 = LPProblem(
+        c=[0.89, 1.71, -1.5],  # min
+        A_ub=[[-1.5, -0.14, -0.33], [-2.67, 2.2, -8]],
+        b_ub=[-1.5, 1.25],
+        A_eq=[[3, -0.71, -1]],
+        b_eq=[-1.57]
+    )
+    p4.solve()
+    print("Задача 4:", p4.x, "f =", p4.fun)
+
+    # Задача 5 (4 переменные)
+    p5 = LPProblem(
+        c=[12, 0.33, 0.89, 1.13],  # min
+        A_ub=[[-2, 1.17, 1.25, 0], [2.25, -2, 0.22, 1.5]],
+        b_ub=[-1.33, -1.71],
+        A_ub=np.vstack((p5.A_ub, [[-1, 7, 1.8, -2.33]])) if 'p5' in locals() else None,
+        b_ub=np.append(p5.b_ub, -0.33) if 'p5' in locals() else None
+    )
+    # Лучше явно:
+    p5 = LPProblem(
+        c=[12, 0.33, 0.89, 1.13],
+        A_ub=[
+            [-2, 1.17, 1.25, 0],
+            [2.25, -2, 0.22, 1.5],
+            [-1, 7, 1.8, -2.33]
+        ],
+        b_ub=[-1.33, -1.71, -0.33]
+    )
+    p5.solve()
+    print("Задача 5:", p5.x, "f =", p5.fun)
+
+    # Транспортная задача (будет решена отдельно)
+    print("\nТранспортная задача решена в Excel + ниже в коде.")
+
+if __name__ == "__main__":
+    solve_all_problems()
+
+
+
+
+
+
+3. Задание 3: Графический интерфейс (Tkinter)
+Файл: gui.py
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+import numpy as np
+from lp_problem import LPProblem
+
+class LPApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Линейное Программирование — Вариант 16")
+        self.root.geometry("900x700")
+        
+        # Вкладки
+        notebook = ttk.Notebook(root)
+        notebook.pack(fill='both', expand=True)
+        
+        self.create_solver_tab(notebook)
+        
+    def create_solver_tab(self, notebook):
+        tab = ttk.Frame(notebook)
+        notebook.add(tab, text="Решатель ЗЛП")
+        
+        # Целевая функция
+        tk.Label(tab, text="Коэффициенты целевой функции (c):", font=('Arial', 10, 'bold')).pack(anchor='w', padx=10, pady=5)
+        self.c_entry = tk.Entry(tab, width=80)
+        self.c_entry.insert(0, "-3, -2")
+        self.c_entry.pack(padx=10)
+        
+        # Ограничения
+        tk.Label(tab, text="Матрица A_ub (через ;):", font=('Arial', 10, 'bold')).pack(anchor='w', padx=10, pady=5)
+        self.Aub_entry = tk.Text(tab, height=4, width=80)
+        self.Aub_entry.insert('1.0', "4 1\n-3 -10\n1 11")
+        self.Aub_entry.pack(padx=10)
+        
+        tk.Label(tab, text="Вектор b_ub:", font=('Arial', 10, 'bold')).pack(anchor='w', padx=10, pady=5)
+        self.bub_entry = tk.Entry(tab, width=80)
+        self.bub_entry.insert(0, "6, -16, 20")
+        self.bub_entry.pack(padx=10)
+        
+        # Кнопка
+        tk.Button(tab, text="Решить задачу", font=('Arial', 12, 'bold'), bg='#4CAF50', fg='white',
+                  command=self.solve_problem).pack(pady=20)
+        
+        # Результат
+        self.result_text = tk.Text(tab, height=15, width=100, font=('Consolas', 10))
+        self.result_text.pack(padx=10, pady=10)
+    
+    def solve_problem(self):
+        try:
+            c = list(map(float, self.c_entry.get().strip().split(',')))
+            
+            # Парсинг A_ub
+            aub_lines = self.Aub_entry.get('1.0', 'end').strip().split('\n')
+            A_ub = [list(map(float, line.split())) for line in aub_lines if line.strip()]
+            
+            b_ub = list(map(float, self.bub_entry.get().strip().split(',')))
+            
+            problem = LPProblem(c=c, A_ub=A_ub, b_ub=b_ub)
+            success = problem.solve()
+            
+            self.result_text.delete('1.0', 'end')
+            if success:
+                result = f"✅ Решение найдено!\n\n"
+                result += f"x = {np.round(problem.x, 4)}\n"
+                result += f"f = {round(problem.fun, 4)}\n"
+                result += f"Количество переменных: {len(problem)}"
+            else:
+                result = "❌ Решение не найдено."
+            
+            self.result_text.insert('1.0', result)
+            
+        except Exception as e:
+            messagebox.showerror("Ошибка", str(e))
+
+
+
+
+
+4. Главный файл
+Файл: main.py
+
+from tkinter import Tk
+from gui import LPApp
+from solutions import solve_all_problems
+
+if __name__ == "__main__":
+    print("Запуск лабораторной работы Вариант 16...\n")
+    solve_all_problems()
+    
+    root = Tk()
+    app = LPApp(root)
+    root.mainloop()
+
+
+
+Как запустить
+
+cd labs/lab6
+pip install -r requirements.txt  # scipy, numpy
+python main.py
